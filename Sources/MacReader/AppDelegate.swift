@@ -8,7 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let text: String
     private let options: Options
     private var window: ReaderWindow?
-    private var reader: ReaderView?
+    private var pane: ReadingPane?
 
     init(text: String, options: Options) {
         self.text = text
@@ -27,20 +27,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let window = ReaderWindow(
             screen: screen, opacity: options.opacity, blur: options.blur, spaceMode: spaceMode)
         let font = Typography.bodyFont(name: options.fontName, size: options.fontSize)
-        let reader = ReaderView(
-            frame: NSRect(origin: .zero, size: screen.frame.size),
-            document: Typography.document(text, mode: options.mode, font: font), bodyFont: font)
-        window.readerView = reader
+        let frame = NSRect(origin: .zero, size: screen.frame.size)
+        let source = ReaderView(
+            frame: frame, document: Typography.document(text, mode: options.mode, font: font),
+            bodyFont: font)
+        let pane: ReadingPane
+        switch options.mode {
+        case .plain: pane = source
+        case .markdown:
+            // Relative links and images resolve against the file's directory; for stdin and
+            // the clipboard, against the working directory.
+            var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            if case .file(let path) = options.source {
+                directory = URL(fileURLWithPath: path).deletingLastPathComponent()
+            }
+            pane = MarkdownView(
+                frame: frame,
+                rendered: RenderedView(
+                    frame: frame, markdown: text, font: font, directory: directory),
+                source: source)
+        }
+        window.readerView = pane
         window.title = options.source.displayName
         // Intercept key presses before the text view sees them so that
         // navigation keys scroll instead of moving an invisible caret.
         window.keyHandler = { [weak self] event in self?.handle(event) ?? false }
         window.setFrame(screen.frame, display: true)
         window.present()
-        window.makeFirstResponder(reader.textView)
-        reader.scrollToTop()
+        window.makeFirstResponder(pane.focusView)
+        pane.scrollToTop()
         self.window = window
-        self.reader = reader
+        self.pane = pane
 
         // Terminals do not always yield activation to a process they spawned,
         // so ask both ways. The window floats while we are active (see below)
@@ -90,7 +107,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ⌘↑/⌘↓ and ⌘j/⌘k jump-to-end combinations the reader handles.
         let isArrow = event.keyCode == 125 || event.keyCode == 126
         if flags.contains(.command) && !isArrow && !(chars == "j" || chars == "k") { return false }
-        return reader?.handleKey(event) ?? false
+        guard let command = ScrollCommand(event), let pane else { return false }
+        pane.scroll(command)
+        return true
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

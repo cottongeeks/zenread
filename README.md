@@ -7,7 +7,7 @@ backdrop. No chrome apart from a thin overlay scroller on the right.
 
 ```
 mac-reader notes.txt
-mac-reader README.md                    # Markdown: source shown verbatim, syntax coloured
+mac-reader README.md                    # Markdown: rendered; the corner icon shows the source
 cat notes.md | mac-reader --markdown -  # stdin is plain text unless told otherwise
 mac-reader                              # no FILE: show the text on the clipboard
 mac-reader --markdown                   # clipboard as Markdown
@@ -47,12 +47,21 @@ Pass `--no-reflow` to show the file exactly as written.
 ## Markdown
 
 Files ending in `.md`, `.markdown`, `.mdown` or `.mkd` open in Markdown mode.
-The file is shown exactly as written. `#`, `*`, backticks, `[text](url)`, `>`
-and list markers all stay on screen, and the syntax is coloured in place:
+Use `--markdown` for stdin and the clipboard, and `--plain` to opt out.
+
+Markdown opens rendered, as GitHub Flavored Markdown: tables, task lists,
+strikethrough, autolinks and footnotes, set in the same reading column and
+colours. It is rendered by cmark-gfm, the parser github.com uses, and raw HTML
+passes through apart from the tags GitHub filters (`<script>`, `<style>`,
+`<iframe>` and so on); scripts never run. Relative images and links resolve
+against the file's directory. Links open in the default app.
+
+A small icon in the top-right corner switches to the source view and back.
+The source is shown exactly as written, with `#`, `*`, backticks,
+`[text](url)`, `>` and list markers all on screen and coloured in place:
 headings slightly larger and bold, code in monospace on a faint tint, links,
 quotes, lists, emphasis and strikethrough in their own colours, delimiters
-dimmed. Long lines still wrap at the column width. Markdown mode never reflows.
-Use `--markdown` for stdin and the clipboard, and `--plain` to opt out.
+dimmed. Long lines still wrap at the column width. Markdown is never reflowed.
 
 ## Keys
 
@@ -74,6 +83,8 @@ another app's full-screen Space. Escape closes it as usual.
 ## Development
 
 Requires the Swift 6 toolchain (Xcode Command Line Tools are enough) on macOS 14+.
+On Linux the package is just `ReaderCore` and its tests, so `make test` and
+`make lint` work there too; Amp orbs set that up with `.agents/setup`.
 
 ```
 make debug      # swift build
@@ -96,9 +107,12 @@ swift run mac-reader path/to/file.txt
 - `TextLoader.swift` – file / stdin / clipboard loading with encoding detection
 - `Reflow.swift` – hard-wrap detection and paragraph reflow
 - `Typography.swift` – font selection, measure, leading, paragraph spacing, Markdown theme
-- `ReaderView.swift` – scroll view, text column, keyboard scrolling
+- `ReaderView.swift` – source text view, scroll commands, the `ReadingPane` protocol
+- `RenderedView.swift` – rendered Markdown in a transparent web view
+- `MarkdownView.swift` – holds the rendered and source views and the toggle icon
 - `ReaderWindow.swift` – borderless full-screen window with blurred backdrop
 - `AppDelegate.swift` – window setup, menu, key dispatch
 - `Sources/ReaderCore/Options.swift` – CLI flags, the text source and the plain / Markdown mode decision
 - `Sources/ReaderCore/MarkdownSpan.swift` – AppKit-free Markdown span extraction (swift-markdown)
-- `Tests/ReaderCoreTests/` – Swift Testing tests for option parsing and span extraction
+- `Sources/ReaderCore/MarkdownHTML.swift` – GitHub Flavored Markdown to HTML (cmark-gfm)
+- `Tests/ReaderCoreTests/` – Swift Testing tests for option parsing, span extraction and HTML rendering

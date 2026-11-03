@@ -6,14 +6,20 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.9.0")
+        .package(url: "https://github.com/swiftlang/swift-markdown.git", from: "0.9.0"),
+        // Already a dependency of swift-markdown; used directly for its GFM HTML renderer.
+        .package(url: "https://github.com/swiftlang/swift-cmark.git", from: "0.9.0"),
     ],
     targets: [
-        // AppKit-free logic (Markdown span extraction), separate so it can
+        // AppKit-free logic (Markdown span extraction and HTML rendering), separate so it can
         // be unit tested, on Linux too.
         .target(
             name: "ReaderCore",
-            dependencies: [.product(name: "Markdown", package: "swift-markdown")]),
+            dependencies: [
+                .product(name: "Markdown", package: "swift-markdown"),
+                .product(name: "cmark-gfm", package: "swift-cmark"),
+                .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
+            ]),
         .testTarget(name: "ReaderCoreTests", dependencies: ["ReaderCore"]),
     ]
 )

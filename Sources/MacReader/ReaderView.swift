@@ -1,5 +1,47 @@
 import AppKit
 
+/// A reading-oriented scroll key.
+enum ScrollCommand {
+    case pageDown, pageUp, lineDown, lineUp, top, bottom
+
+    /// How much of the visible height a page step moves.
+    static let pageFraction: CGFloat = 0.85
+
+    /// The command `event` asks for, or nil when it is not a scroll key.
+    init?(_ event: NSEvent) {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let chars = event.charactersIgnoringModifiers ?? ""
+        switch (event.keyCode, chars) {
+        case (49, _):  // space
+            self = flags.contains(.shift) ? .pageUp : .pageDown
+        case (121, _), (_, "f"), (_, "d"):  // page down, f, d
+            self = .pageDown
+        case (116, _), (_, "b"), (_, "u"):  // page up, b, u
+            self = .pageUp
+        case (125, _), (_, "j"):  // down arrow, j
+            self = flags.contains(.command) ? .bottom : .lineDown
+        case (126, _), (_, "k"):  // up arrow, k
+            self = flags.contains(.command) ? .top : .lineUp
+        case (115, _), (_, "g"):  // home, g
+            self = .top
+        case (119, _), (_, "G"):  // end, G
+            self = .bottom
+        default:
+            return nil
+        }
+    }
+}
+
+/// A view that shows the document and scrolls it from the keyboard.
+@MainActor
+protocol ReadingPane: NSView {
+    /// The view to make first responder, so copy and select all reach the text.
+    var focusView: NSView { get }
+    func scroll(_ command: ScrollCommand)
+    /// Scrolls to the start of the document without animation.
+    func scrollToTop()
+}
+
 /// Read-only text view that never scrolls itself to the (invisible) caret.
 /// AppKit does that when a text view becomes first responder, which would
 /// hide the top inset on launch; all scrolling here is driven by the user.
@@ -9,7 +51,7 @@ final class ReaderTextView: NSTextView {
 
 /// A scroll view containing a single read-only text column centred on screen.
 /// Owns the thin overlay scroller and all keyboard scrolling behaviour.
-final class ReaderView: NSScrollView {
+final class ReaderView: NSScrollView, ReadingPane {
     let textView: ReaderTextView
     /// One-line scroll step: the body line height. Taken from the body font, not
     /// `textView.font`, which reports the first character's font (a heading or code block
@@ -105,47 +147,30 @@ final class ReaderView: NSScrollView {
 
     // MARK: Keyboard scrolling
 
-    /// Handles reading-oriented keys. Returns true when the key was consumed.
-    func handleKey(_ event: NSEvent) -> Bool {
+    var focusView: NSView { textView }
+
+    func scroll(_ command: ScrollCommand) {
         let clip = contentView
         let visible = clip.bounds
-        let docHeight = textView.frame.height
-        let maxY = max(0, docHeight - visible.height)
-        let page = visible.height * 0.85
-        let line = lineStep
+        let maxY = max(0, textView.frame.height - visible.height)
+        let page = visible.height * ScrollCommand.pageFraction
 
-        func scroll(to y: CGFloat) {
-            let target = NSPoint(x: 0, y: min(max(0, y), maxY))
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.18
-                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-                clip.animator().setBoundsOrigin(target)
-                reflectScrolledClipView(clip)
-            }
-            flashScrollers()
+        let y: CGFloat
+        switch command {
+        case .pageDown: y = visible.minY + page
+        case .pageUp: y = visible.minY - page
+        case .lineDown: y = visible.minY + lineStep
+        case .lineUp: y = visible.minY - lineStep
+        case .top: y = 0
+        case .bottom: y = maxY
         }
-
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let chars = event.charactersIgnoringModifiers ?? ""
-
-        switch (event.keyCode, chars) {
-        case (49, _):  // space
-            scroll(to: flags.contains(.shift) ? visible.minY - page : visible.minY + page)
-        case (121, _), (_, "f"), (_, "d"):  // page down, f, d
-            scroll(to: visible.minY + page)
-        case (116, _), (_, "b"), (_, "u"):  // page up, b, u
-            scroll(to: visible.minY - page)
-        case (125, _), (_, "j"):  // down arrow, j
-            scroll(to: visible.minY + (flags.contains(.command) ? maxY : line))
-        case (126, _), (_, "k"):  // up arrow, k
-            scroll(to: flags.contains(.command) ? 0 : visible.minY - line)
-        case (115, _), (_, "g"):  // home, g
-            scroll(to: 0)
-        case (119, _), (_, "G"):  // end, G
-            scroll(to: maxY)
-        default:
-            return false
+        let target = NSPoint(x: 0, y: min(max(0, y), maxY))
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.18
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            clip.animator().setBoundsOrigin(target)
+            reflectScrolledClipView(clip)
         }
-        return true
+        flashScrollers()
     }
 }
