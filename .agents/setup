@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Prepares a Linux orb for this repository. The app itself is AppKit and builds only on
+# macOS (use the Mac satellite for that); on Linux the Swift toolchain builds and tests the
+# AppKit-free ReaderCore target and runs swift format.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+SWIFT_VERSION=6.4.2
+SWIFT_HOME=/opt/swift-$SWIFT_VERSION
+
+step() {
+  echo "==> $1"
+  SECONDS=0
+}
+done_step() { echo "    done in ${SECONDS}s"; }
+
+# Runtime libraries the Swift toolchain needs on Debian 12 (from swift.org's install guide).
+packages=(
+  binutils git gnupg2 libc6-dev libcurl4-openssl-dev libedit2 libgcc-12-dev libpython3-dev
+  libsqlite3-0 libstdc++-12-dev libxml2-dev libz3-dev pkg-config tzdata unzip zlib1g-dev
+)
+step "system packages"
+missing=()
+for p in "${packages[@]}"; do
+  dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || missing+=("$p")
+done
+if ((${#missing[@]})); then
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
+fi
+done_step
+
+step "Swift $SWIFT_VERSION toolchain"
+if [[ ! -x $SWIFT_HOME/usr/bin/swift ]]; then
+  tmp=$(mktemp -d)
+  url="https://download.swift.org/swift-$SWIFT_VERSION-release/debian12/swift-$SWIFT_VERSION-RELEASE/swift-$SWIFT_VERSION-RELEASE-debian12.tar.gz"
+  curl -fsSL --retry 3 "$url" -o "$tmp/swift.tar.gz"
+  sudo mkdir -p "$SWIFT_HOME"
+  sudo tar -xzf "$tmp/swift.tar.gz" -C "$SWIFT_HOME" --strip-components=1
+  rm -rf "$tmp"
+fi
+# Symlinks in /usr/local/bin put the toolchain on every shell's PATH, login or not; the
+# drivers resolve their toolchain through the symlink.
+for tool in swift swiftc swift-format sourcekit-lsp lldb; do
+  sudo ln -sfn "$SWIFT_HOME/usr/bin/$tool" "/usr/local/bin/$tool"
+done
+swift --version
+done_step
+
+step "package dependencies and warm build"
+swift package resolve
+swift build --build-tests
+done_step

@@ -1,3 +1,6 @@
 # SwiftPM build output and editor state
 .build/
 .swiftpm/
+
+# Amp orb portal registrations
+.amp/portals/*
