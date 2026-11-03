@@ -1,17 +1,33 @@
 import AppKit
+import ReaderCore
 
-// Entry point. Parse arguments and load the file before touching AppKit so
+/// Writes "mac-reader: message" to stderr.
+func warn(_ message: String) {
+    FileHandle.standardError.write(Data("mac-reader: \(message)\n".utf8))
+}
+
+// Entry point. Parse arguments and load the text before touching AppKit so
 // that errors surface on the terminal instead of in a half-launched app.
 
-guard let options = Options.parse(Array(CommandLine.arguments.dropFirst())) else {
+let options: Options
+do {
+    switch try Options.parse(Array(CommandLine.arguments.dropFirst())) {
+    case .help:
+        print(Options.usage)
+        exit(0)
+    case .read(let parsed):
+        options = parsed
+    }
+} catch {
+    warn("\(error)\n\n\(Options.usage)")
     exit(64)  // EX_USAGE
 }
 
 let text: String
 do {
-    text = try TextLoader.load(options.path)
+    text = try TextLoader.load(options.source)
 } catch {
-    FileHandle.standardError.write("mac-reader: \(error)\n".data(using: .utf8)!)
+    warn("\(error)")
     exit(66)  // EX_NOINPUT
 }
 

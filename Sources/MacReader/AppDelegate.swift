@@ -1,4 +1,5 @@
 import AppKit
+import ReaderCore
 
 /// Wires the window, menus and the global key handling together.
 @MainActor
@@ -30,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             frame: NSRect(origin: .zero, size: screen.frame.size),
             document: Typography.document(text, mode: options.mode, font: font), bodyFont: font)
         window.readerView = reader
-        window.title = (options.path as NSString).lastPathComponent
+        window.title = options.source.displayName
         // Intercept key presses before the text view sees them so that
         // navigation keys scroll instead of moving an invisible caret.
         window.keyHandler = { [weak self] event in self?.handle(event) ?? false }
@@ -44,12 +45,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Terminals do not always yield activation to a process they spawned,
         // so ask both ways. The window floats while we are active (see below)
         // so it covers the terminal even if activation is delayed.
+        // (`.activateIgnoringOtherApps` has no effect since macOS 14, so it is not passed.)
         NSApp.activate(ignoringOtherApps: true)
-        NSRunningApplication.current.activate(options: [.activateIgnoringOtherApps])
+        NSRunningApplication.current.activate()
         if ProcessInfo.processInfo.environment["MAC_READER_DEBUG"] != nil {
-            FileHandle.standardError.write(
-                "screen \(screen.frame) window \(window.frame) space \(spaceMode)\n".data(
-                    using: .utf8)!)
+            warn("screen \(screen.frame) window \(window.frame) space \(spaceMode)")
         }
     }
 

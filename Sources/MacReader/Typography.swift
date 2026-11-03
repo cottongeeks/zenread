@@ -20,8 +20,7 @@ enum Typography {
             {
                 return f
             }
-            FileHandle.standardError.write(
-                "mac-reader: font \(name) not found, using default\n".data(using: .utf8)!)
+            warn("font \(name) not found, using default")
         }
         // New York: the system serif design, only reachable through a
         // descriptor. Its family name is private (".AppleSystemUIFontSerif"),

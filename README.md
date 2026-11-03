@@ -1,7 +1,7 @@
 # mac-reader
 
 A minimal macOS reading view for plain text and Markdown files. Launch it from
-the terminal with a file and it fills the screen with a single, centred reading
+the terminal with a file, or with no file to read the clipboard, and it fills the screen with a single, centred reading
 column set in the system serif (New York) over a blurred, translucent dark
 backdrop. No chrome apart from a thin overlay scroller on the right.
 
@@ -9,6 +9,9 @@ backdrop. No chrome apart from a thin overlay scroller on the right.
 mac-reader notes.txt
 mac-reader README.md                    # Markdown: source shown verbatim, syntax coloured
 cat notes.md | mac-reader --markdown -  # stdin is plain text unless told otherwise
+mac-reader                              # no FILE: show the text on the clipboard
+mac-reader --markdown                   # clipboard as Markdown
+mac-reader -- -notes.txt                # a file whose name starts with '-'
 mac-reader --plain CHANGELOG.md         # a .md file as plain text (reflow applies)
 mac-reader --font Charter --size 22 book.txt
 mac-reader --opacity 0.9 --no-blur notes.txt
@@ -21,9 +24,20 @@ mac-reader --no-reflow poem.txt
 | `--size POINTS` | 20 | Body text size |
 | `--opacity N` | 0.8 | Opacity of the dark backdrop, 0 to 1 |
 | `--no-blur` | blur on | Show what is behind the window sharp instead of blurred |
-| `--markdown` | by extension | Show FILE as Markdown (needed for stdin) |
-| `--plain` | by extension | Show FILE as plain text even if it ends in `.md` |
-| `--no-reflow` | reflow on | Keep the file's own line breaks (plain text only; Markdown is never reflowed) |
+| `--markdown` | by extension | Show the text as Markdown (needed for stdin and the clipboard) |
+| `--plain` | by extension | Show the text as plain text even if the file ends in `.md` |
+| `--no-reflow` | reflow on | Keep the text's own line breaks (plain text only; Markdown is never reflowed) |
+| `--` | | End of options; a following FILE may start with `-` |
+
+## Sources
+
+`FILE` is a path, or `-` for standard input. With no `FILE`, the reader shows
+the text on the clipboard (the general pasteboard), which suits a global hotkey
+or launcher. Stdin is only read when asked for with `-`, so a launcher that
+leaves stdin attached to nothing still gets the clipboard. An empty clipboard,
+or one holding only a file or image, exits with status 66 and a message, like
+an unreadable file does. Standard input and the clipboard have no extension, so
+they are plain text unless `--markdown` is given.
 
 Hard-wrapped files (text wrapped at 72/80 columns) are reflowed into paragraphs
 so they read naturally at the wider measure. Blank lines separate paragraphs;
@@ -38,7 +52,7 @@ and list markers all stay on screen, and the syntax is coloured in place:
 headings slightly larger and bold, code in monospace on a faint tint, links,
 quotes, lists, emphasis and strikethrough in their own colours, delimiters
 dimmed. Long lines still wrap at the column width. Markdown mode never reflows.
-Use `--markdown` for stdin and `--plain` to opt out.
+Use `--markdown` for stdin and the clipboard, and `--plain` to opt out.
 
 ## Keys
 
@@ -78,13 +92,13 @@ swift run mac-reader path/to/file.txt
 
 ## Layout
 
-- `Sources/MacReader/main.swift` – argument parsing and app bootstrap
-- `Options.swift` – CLI flags and the plain / Markdown mode decision
-- `TextLoader.swift` – file / stdin loading with encoding detection
+- `Sources/MacReader/main.swift` – app bootstrap and error reporting
+- `TextLoader.swift` – file / stdin / clipboard loading with encoding detection
 - `Reflow.swift` – hard-wrap detection and paragraph reflow
 - `Typography.swift` – font selection, measure, leading, paragraph spacing, Markdown theme
 - `ReaderView.swift` – scroll view, text column, keyboard scrolling
 - `ReaderWindow.swift` – borderless full-screen window with blurred backdrop
 - `AppDelegate.swift` – window setup, menu, key dispatch
+- `Sources/ReaderCore/Options.swift` – CLI flags, the text source and the plain / Markdown mode decision
 - `Sources/ReaderCore/MarkdownSpan.swift` – AppKit-free Markdown span extraction (swift-markdown)
-- `Tests/ReaderCoreTests/` – Swift Testing fixtures for the span extraction
+- `Tests/ReaderCoreTests/` – Swift Testing tests for option parsing and span extraction
