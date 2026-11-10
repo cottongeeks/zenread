@@ -18,6 +18,8 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
         let configuration = WKWebViewConfiguration()
         // The page needs no scripts of its own; the app's evaluateJavaScript calls still run.
         configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+        // A reader has nothing to rewrite, so no Writing Tools button on selected text.
+        if #available(macOS 15.0, *) { configuration.writingToolsBehavior = .none }
         configuration.setURLSchemeHandler(LocalFiles(), forURLScheme: LocalFiles.scheme)
         super.init(frame: frame, configuration: configuration)
         // Let the blurred backdrop show through.

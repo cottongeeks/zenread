@@ -110,6 +110,8 @@ final class ReaderView: NSScrollView, ReadingPane {
         textView.allowsUndo = false
         textView.isAutomaticLinkDetectionEnabled = false
         textView.isAutomaticDataDetectionEnabled = false
+        // A reader has nothing to rewrite, so no Writing Tools button on selected text.
+        if #available(macOS 15.0, *) { textView.writingToolsBehavior = .none }
         textView.selectedTextAttributes = [
             .backgroundColor: NSColor(calibratedWhite: 1.0, alpha: 0.18)
         ]
