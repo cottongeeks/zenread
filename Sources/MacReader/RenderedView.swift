@@ -6,11 +6,15 @@ import WebKit
 /// Markdown rendered to HTML (GitHub Flavored Markdown) in a transparent web view, styled to
 /// match the source view's typography and colours.
 final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
+    /// One-line scroll step in CSS pixels, which `pageZoom` does not change.
     private let lineStep: CGFloat
+    /// The body size the page is written for; `setFont` zooms the page relative to it.
+    private let pageSize: CGFloat
 
     /// Relative links and images resolve against `directory`.
     init(frame: NSRect, markdown: String, font: NSFont, directory: URL) {
         lineStep = font.pointSize * Typography.leading
+        pageSize = font.pointSize
         let configuration = WKWebViewConfiguration()
         // The page needs no scripts of its own; the app's evaluateJavaScript calls still run.
         configuration.defaultWebpagePreferences.allowsContentJavaScript = false
@@ -33,7 +37,8 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
     var focusView: NSView { self }
 
     func scroll(_ command: ScrollCommand) {
-        let page = bounds.height * ScrollCommand.pageFraction
+        // Scripts measure in CSS pixels, each `pageZoom` points.
+        let page = bounds.height * ScrollCommand.pageFraction / pageZoom
         let script: String
         switch command {
         case .pageDown: script = "window.scrollBy({top: \(page), behavior: 'smooth'})"
@@ -48,6 +53,10 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
     }
 
     func scrollToTop() { evaluateJavaScript("window.scrollTo(0, 0)") }
+
+    /// Page zoom scales the text, the column and its margins together, the way browser zoom
+    /// does; the column still never grows past the window.
+    func setFont(_ font: NSFont) { pageZoom = font.pointSize / pageSize }
 
     // MARK: Links
 
@@ -93,8 +102,8 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
             html, body { background: transparent; margin: 0; }
             body {
                 font-family: \(cssFamily(font)); font-size: \(size)px; line-height: \(Typography.leading);
-                color: rgb(219 219 219); max-width: \(Typography.measure)px; margin: 0 auto;
-                padding: 12vh 32px 20vh; overflow-wrap: break-word;
+                color: rgb(219 219 219); max-width: \(Typography.measure(size: size))px; margin: 0 auto;
+                padding: 12vh \(Typography.margin)px 20vh; overflow-wrap: break-word;
                 font-kerning: normal; font-variant-ligatures: common-ligatures;
             }
             ::selection { background: rgb(255 255 255 / 0.18); }

@@ -65,4 +65,8 @@ final class MarkdownView: NSView, ReadingPane {
         rendered.scrollToTop()
         source.scrollToTop()
     }
+    func setFont(_ font: NSFont) {
+        rendered.setFont(font)
+        source.setFont(font)
+    }
 }

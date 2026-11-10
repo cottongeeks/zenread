@@ -2,32 +2,27 @@
 
 A minimal macOS reading view for plain text and Markdown files. Launch it from
 the terminal with a file, or with no file to read the clipboard, and it fills the screen with a single, centred reading
-column set in the system serif (New York) over a blurred, translucent dark
-backdrop. No chrome apart from a thin overlay scroller on the right.
+column set in the system serif (New York) over a blur of whatever is behind it.
+No chrome apart from a thin overlay scroller on the right.
 
 ```
-mac-reader notes.txt
-mac-reader README.md                    # Markdown: rendered; the corner icon shows the source
-cat notes.md | mac-reader --markdown -  # stdin is plain text unless told otherwise
-mac-reader                              # no FILE: show the text on the clipboard
-mac-reader --markdown                   # clipboard as Markdown
-mac-reader -- -notes.txt                # a file whose name starts with '-'
-mac-reader --plain CHANGELOG.md         # a .md file as plain text (reflow applies)
-mac-reader --font Charter --size 22 book.txt
-mac-reader --opacity 0.9 --no-blur notes.txt
-mac-reader --no-reflow poem.txt
+mac-reader README.md               # rendered Markdown; the corner icon shows the source
+cat notes.md | mac-reader -        # standard input
+mac-reader                         # no FILE: show the text on the clipboard
+mac-reader -- -notes.txt           # a file whose name starts with '-'
+mac-reader --plain notes.txt       # plain text, hard-wrapped lines reflowed
+mac-reader --font Charter book.md
 ```
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
 | `--font NAME` | New York | Font family or face; falls back to Charter, then Georgia |
-| `--size POINTS` | 20 | Body text size |
-| `--opacity N` | 0.8 | Opacity of the dark backdrop, 0 to 1 |
-| `--no-blur` | blur on | Show what is behind the window sharp instead of blurred |
-| `--markdown` | by extension | Show the text as Markdown (needed for stdin and the clipboard) |
-| `--plain` | by extension | Show the text as plain text even if the file ends in `.md` |
-| `--no-reflow` | reflow on | Keep the text's own line breaks (plain text only; Markdown is never reflowed) |
+| `--plain` | Markdown | Show the text as plain text instead of Markdown |
 | `--` | | End of options; a following FILE may start with `-` |
+
+Text opens at 20 points; `⌘+` and `⌘-` zoom it in 2 point steps. The reading
+column scales with the text, so lines keep their length, from 12 points up to
+the largest size whose column still fits the screen width.
 
 ## Sources
 
@@ -36,20 +31,17 @@ the text on the clipboard (the general pasteboard), which suits a global hotkey
 or launcher. Stdin is only read when asked for with `-`, so a launcher that
 leaves stdin attached to nothing still gets the clipboard. An empty clipboard,
 or one holding only a file or image, exits with status 66 and a message, like
-an unreadable file does. Standard input and the clipboard have no extension, so
-they are plain text unless `--markdown` is given.
+an unreadable file does.
 
-Hard-wrapped files (text wrapped at 72/80 columns) are reflowed into paragraphs
-so they read naturally at the wider measure. Blank lines separate paragraphs;
-indented lines, list items, headings and block quotes keep their own breaks.
-Pass `--no-reflow` to show the file exactly as written.
+With `--plain`, hard-wrapped text (wrapped at 72/80 columns) is reflowed into
+paragraphs so it reads naturally at the wider measure. Blank lines separate
+paragraphs; indented lines, list items, headings and block quotes keep their own
+breaks.
 
 ## Markdown
 
-Files ending in `.md`, `.markdown`, `.mdown` or `.mkd` open in Markdown mode.
-Use `--markdown` for stdin and the clipboard, and `--plain` to opt out.
-
-Markdown opens rendered, as GitHub Flavored Markdown: tables, task lists,
+Every source, whatever its extension, opens as Markdown unless `--plain` is
+given. Markdown opens rendered, as GitHub Flavored Markdown: tables, task lists,
 strikethrough, autolinks and footnotes, set in the same reading column and
 colours. It is rendered by cmark-gfm, the parser github.com uses, and raw HTML
 passes through apart from the tags GitHub filters (`<script>`, `<style>`,
@@ -71,6 +63,7 @@ dimmed. Long lines still wrap at the column width. Markdown is never reflowed.
 | `Space` / `Shift-Space`, `PgDn` / `PgUp`, `f` / `b`, `d` / `u` | Page down / up |
 | `↓` / `↑`, `j` / `k` | Line down / up |
 | `Home` / `End`, `g` / `G`, `⌘↑` / `⌘↓` | Top / bottom |
+| `⌘+` (or `⌘=`) / `⌘-` | Zoom in / out |
 | `⌘C`, `⌘A` | Copy selection, select all |
 
 The reader opens on the display the mouse pointer is on. The menu bar and Dock
@@ -106,13 +99,13 @@ swift run mac-reader path/to/file.txt
 - `Sources/MacReader/main.swift` – app bootstrap and error reporting
 - `TextLoader.swift` – file / stdin / clipboard loading with encoding detection
 - `Reflow.swift` – hard-wrap detection and paragraph reflow
-- `Typography.swift` – font selection, measure, leading, paragraph spacing, Markdown theme
+- `Typography.swift` – font selection, measure, zoom bounds, leading, paragraph spacing, Markdown theme
 - `ReaderView.swift` – source text view, scroll commands, the `ReadingPane` protocol
 - `RenderedView.swift` – rendered Markdown in a transparent web view
 - `MarkdownView.swift` – holds the rendered and source views and the toggle icon
-- `ReaderWindow.swift` – borderless full-screen window with blurred backdrop
+- `ReaderWindow.swift` – borderless full-screen window with a blurred backdrop
 - `AppDelegate.swift` – window setup, menu, key dispatch
-- `Sources/ReaderCore/Options.swift` – CLI flags, the text source and the plain / Markdown mode decision
+- `Sources/ReaderCore/Options.swift` – CLI flags, the text source and the plain / Markdown mode
 - `Sources/ReaderCore/MarkdownSpan.swift` – AppKit-free Markdown span extraction (swift-markdown)
 - `Sources/ReaderCore/MarkdownHTML.swift` – GitHub Flavored Markdown to HTML (cmark-gfm)
 - `Tests/ReaderCoreTests/` – Swift Testing tests for option parsing, span extraction and HTML rendering

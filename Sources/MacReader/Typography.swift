@@ -3,9 +3,26 @@ import ReaderCore
 
 /// Builds the font and paragraph attributes for the reading column.
 enum Typography {
-    /// Measure (column width) in points. ~65–70 characters at 20pt serif,
-    /// which is the classic comfortable line length for continuous reading.
-    static let measure: CGFloat = 660
+    /// Body text size the reader opens at.
+    static let defaultSize: CGFloat = 20
+    /// How much ⌘+ and ⌘- change the body size.
+    static let zoomStep: CGFloat = 2
+    /// The smallest size ⌘- reaches.
+    static let minimumSize: CGFloat = 12
+    /// Space kept between the column and the screen edges.
+    static let margin: CGFloat = 32
+
+    /// Measure (column width) for body text `size` points tall: 33 ems, ~65–70 characters of
+    /// serif, the classic comfortable line length for continuous reading. Zooming scales the
+    /// column with the text, so lines keep their length.
+    static func measure(size: CGFloat) -> CGFloat { size * 33 }
+
+    /// Body sizes whose column, with its margins, fits a screen `width` points wide. The
+    /// largest is a whole number of steps, so zooming back out returns to `defaultSize`.
+    static func sizes(forWidth width: CGFloat) -> ClosedRange<CGFloat> {
+        let largest = (width - 2 * margin) / measure(size: 1)
+        return minimumSize...max(minimumSize, (largest / zoomStep).rounded(.down) * zoomStep)
+    }
 
     /// Fallbacks tried in order if the system serif (New York) is unavailable.
     /// Charter and Georgia ship with macOS and are excellent screen serifs.
@@ -89,7 +106,7 @@ enum Typography {
     /// The attributed document for the reading column.
     static func document(_ text: String, mode: TextMode, font: NSFont) -> NSAttributedString {
         switch mode {
-        case .plain(let reflow): return styled(reflow ? Reflow.reflow(text) : text, font: font)
+        case .plain: return styled(Reflow.reflow(text), font: font)
         case .markdown: return markdown(text, font: font)
         }
     }

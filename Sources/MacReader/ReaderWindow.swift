@@ -34,14 +34,11 @@ enum SpaceMode {
 /// A borderless window that covers the whole screen. Borderless windows refuse
 /// key status by default, so that is overridden here.
 final class ReaderWindow: NSWindow {
-    /// Colour of the tint laid over the desktop; its alpha is the `--opacity`.
-    static let tintColor = NSColor(calibratedRed: 0.06, green: 0.06, blue: 0.07, alpha: 1)
-
-    /// Hosts the content on top of an optionally blurred, tinted backdrop.
+    /// Hosts the content on top of a blur of whatever is behind the window.
     let backdrop: NSView
     let spaceMode: SpaceMode
 
-    init(screen: NSScreen, opacity: CGFloat, blur: Bool, spaceMode: SpaceMode) {
+    init(screen: NSScreen, spaceMode: SpaceMode) {
         self.spaceMode = spaceMode
         backdrop = NSView(frame: NSRect(origin: .zero, size: screen.frame.size))
         super.init(
@@ -70,23 +67,14 @@ final class ReaderWindow: NSWindow {
         }
         level = .normal
 
-        // Optionally blur whatever is behind the window, then darken it with
-        // a tint. The effect view is only added when blurring: an inactive
-        // one paints a solid backdrop of its own rather than nothing.
+        // Blur whatever is behind the window, with no tint over it.
         backdrop.autoresizingMask = [.width, .height]
-        if blur {
-            let effect = NSVisualEffectView(frame: backdrop.bounds)
-            effect.blendingMode = .behindWindow
-            effect.material = .hudWindow
-            effect.state = .active
-            effect.autoresizingMask = [.width, .height]
-            backdrop.addSubview(effect)
-        }
-        let tintView = NSView(frame: backdrop.bounds)
-        tintView.wantsLayer = true
-        tintView.layer?.backgroundColor = Self.tintColor.withAlphaComponent(opacity).cgColor
-        tintView.autoresizingMask = [.width, .height]
-        backdrop.addSubview(tintView)
+        let effect = NSVisualEffectView(frame: backdrop.bounds)
+        effect.blendingMode = .behindWindow
+        effect.material = .hudWindow
+        effect.state = .active
+        effect.autoresizingMask = [.width, .height]
+        backdrop.addSubview(effect)
         super.contentView = backdrop
     }
 

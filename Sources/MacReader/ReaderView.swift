@@ -1,4 +1,5 @@
 import AppKit
+import ReaderCore
 
 /// A reading-oriented scroll key.
 enum ScrollCommand {
@@ -40,6 +41,9 @@ protocol ReadingPane: NSView {
     func scroll(_ command: ScrollCommand)
     /// Scrolls to the start of the document without animation.
     func scrollToTop()
+    /// Sets the body text in `font`, scaling the column with it and keeping the reading
+    /// position.
+    func setFont(_ font: NSFont)
 }
 
 /// Read-only text view that never scrolls itself to the (invisible) caret.
@@ -53,22 +57,30 @@ final class ReaderTextView: NSTextView {
 /// Owns the thin overlay scroller and all keyboard scrolling behaviour.
 final class ReaderView: NSScrollView, ReadingPane {
     let textView: ReaderTextView
+    private let text: String
+    private let mode: TextMode
     /// One-line scroll step: the body line height. Taken from the body font, not
     /// `textView.font`, which reports the first character's font (a heading or code block
     /// in Markdown).
-    private let lineStep: CGFloat
+    private var lineStep: CGFloat
+    /// Column width for the body font.
+    private var measure: CGFloat
 
-    /// `document` is shown as-is; `bodyFont` only sets the scroll step.
-    init(frame: NSRect, document: NSAttributedString, bodyFont: NSFont) {
-        lineStep = bodyFont.pointSize * Typography.leading
+    /// Shows `text` styled by `Typography.document` for `mode` in `font`.
+    init(frame: NSRect, text: String, mode: TextMode, font: NSFont) {
+        self.text = text
+        self.mode = mode
+        lineStep = font.pointSize * Typography.leading
+        measure = Typography.measure(size: font.pointSize)
         let container = NSTextContainer(
-            size: NSSize(width: Typography.measure, height: CGFloat.greatestFiniteMagnitude))
+            size: NSSize(width: measure, height: CGFloat.greatestFiniteMagnitude))
         container.widthTracksTextView = false
         container.lineFragmentPadding = 0
 
         let layoutManager = NSLayoutManager()
         layoutManager.addTextContainer(container)
-        let storage = NSTextStorage(attributedString: document)
+        let storage = NSTextStorage(
+            attributedString: Typography.document(text, mode: mode, font: font))
         storage.addLayoutManager(layoutManager)
 
         textView = ReaderTextView(frame: frame, textContainer: container)
@@ -127,15 +139,15 @@ final class ReaderView: NSScrollView, ReadingPane {
         autoresizingMask = [.width, .height]
     }
 
-    /// Centres the fixed-measure text container inside the view by padding the
+    /// Centres the measure-wide text container inside the view by padding the
     /// text view's inset. Vertical inset gives the first line some breathing
     /// room from the top of the screen.
     private func layoutColumn() {
         let width = bounds.width
-        let measure = min(Typography.measure, width - 2 * 32)
+        let column = min(measure, width - 2 * Typography.margin)
         textView.textContainer?.containerSize = NSSize(
-            width: measure, height: CGFloat.greatestFiniteMagnitude)
-        let sideInset = max(32, (width - measure) / 2)
+            width: column, height: CGFloat.greatestFiniteMagnitude)
+        let sideInset = max(Typography.margin, (width - column) / 2)
         let topInset = (bounds.height * 0.12).rounded()
         textView.textContainerInset = NSSize(width: sideInset, height: topInset)
     }
@@ -143,6 +155,24 @@ final class ReaderView: NSScrollView, ReadingPane {
     override func resizeSubviews(withOldSize oldSize: NSSize) {
         super.resizeSubviews(withOldSize: oldSize)
         layoutColumn()
+    }
+
+    func setFont(_ font: NSFont) {
+        // The same fraction of the document stays at the top of the screen.
+        let fraction = contentView.bounds.minY / max(1, textView.frame.height)
+        lineStep = font.pointSize * Typography.leading
+        measure = Typography.measure(size: font.pointSize)
+        textView.textStorage?.setAttributedString(
+            Typography.document(text, mode: mode, font: font))
+        layoutColumn()
+        if let layoutManager = textView.layoutManager, let container = textView.textContainer {
+            layoutManager.ensureLayout(for: container)
+        }
+        textView.sizeToFit()
+        let maxY = max(0, textView.frame.height - contentView.bounds.height)
+        contentView.scroll(
+            to: NSPoint(x: 0, y: min(maxY, (fraction * textView.frame.height).rounded())))
+        reflectScrolledClipView(contentView)
     }
 
     // MARK: Keyboard scrolling

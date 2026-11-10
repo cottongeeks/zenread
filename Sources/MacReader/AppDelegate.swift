@@ -9,6 +9,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let options: Options
     private var window: ReaderWindow?
     private var pane: ReadingPane?
+    /// The body font at the current zoom.
+    private var font: NSFont?
+    /// Sizes ⌘+ and ⌘- move between; the largest still fits the column on the screen.
+    private var sizes: ClosedRange<CGFloat> = Typography.minimumSize...Typography.defaultSize
 
     init(text: String, options: Options) {
         self.text = text
@@ -24,13 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let screen = Self.targetScreen()
         let spaceMode = SpaceMode.forScreen(screen)
-        let window = ReaderWindow(
-            screen: screen, opacity: options.opacity, blur: options.blur, spaceMode: spaceMode)
-        let font = Typography.bodyFont(name: options.fontName, size: options.fontSize)
+        let window = ReaderWindow(screen: screen, spaceMode: spaceMode)
+        let font = Typography.bodyFont(name: options.fontName, size: Typography.defaultSize)
         let frame = NSRect(origin: .zero, size: screen.frame.size)
-        let source = ReaderView(
-            frame: frame, document: Typography.document(text, mode: options.mode, font: font),
-            bodyFont: font)
+        let source = ReaderView(frame: frame, text: text, mode: options.mode, font: font)
         let pane: ReadingPane
         switch options.mode {
         case .plain: pane = source
@@ -58,6 +59,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pane.scrollToTop()
         self.window = window
         self.pane = pane
+        self.font = font
+        sizes = Typography.sizes(forWidth: screen.frame.width)
 
         // Terminals do not always yield activation to a process they spawned,
         // so ask both ways. The window floats while we are active (see below)
@@ -103,6 +106,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.terminate(nil)
             return true
         }
+        // ⌘+ (also ⌘= unshifted, and keypad +) and ⌘- zoom.
+        if flags.subtracting([.shift, .numericPad]) == .command {
+            switch chars {
+            case "+", "=":
+                zoom(by: Typography.zoomStep)
+                return true
+            case "-":
+                zoom(by: -Typography.zoomStep)
+                return true
+            default: break
+            }
+        }
         // Leave other ⌘ shortcuts (copy, select all) to the menu, except the
         // ⌘↑/⌘↓ and ⌘j/⌘k jump-to-end combinations the reader handles.
         let isArrow = event.keyCode == 125 || event.keyCode == 126
@@ -110,6 +125,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let command = ScrollCommand(event), let pane else { return false }
         pane.scroll(command)
         return true
+    }
+
+    /// Changes the body size by `delta` points, within `sizes`.
+    private func zoom(by delta: CGFloat) {
+        guard let font, let pane else { return }
+        let size = min(max(font.pointSize + delta, sizes.lowerBound), sizes.upperBound)
+        guard size != font.pointSize,
+            let zoomed = NSFont(descriptor: font.fontDescriptor, size: size)
+        else { return }
+        self.font = zoomed
+        pane.setFont(zoomed)
+        if ProcessInfo.processInfo.environment["MAC_READER_DEBUG"] != nil {
+            warn("zoom \(size)pt, range \(sizes)")
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
