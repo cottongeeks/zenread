@@ -4,3 +4,6 @@
 
 # Amp orb portal registrations
 .amp/portals/*
+
+# make app output
+/build/

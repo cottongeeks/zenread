@@ -5,6 +5,32 @@ the terminal with a file, or with no file to read the clipboard, and it fills th
 column set in the system serif (New York) over a blur of whatever is behind it.
 No chrome apart from a thin overlay scroller on the right.
 
+It installs as Mac Reader in Applications, and the same app runs from the
+terminal as `mac-reader`.
+
+## Install
+
+Needs macOS 14 or later and the Swift 6 toolchain (the Xcode Command Line Tools
+are enough).
+
+```
+make install    # build/Mac Reader.app -> /Applications, and a mac-reader command in ~/bin
+```
+
+`APPDIR=~/Applications` and `PREFIX=/usr/local/bin` change where they go;
+`make uninstall` removes both. `~/bin` must be on your `PATH`.
+
+The `mac-reader` command is a two-line script that runs the binary inside the
+app, so the terminal and Finder share one installation. It is not a symlink:
+macOS only treats the process as Mac Reader, with its name and icon, when the
+binary runs from its place in the bundle.
+
+From Finder, the Dock or Spotlight, Mac Reader shows the clipboard. It also
+appears under Open With for text and Markdown files, without becoming their
+default app, and opening a file while it is running replaces what it shows.
+Errors that would go to the terminal (an empty clipboard, an unreadable file)
+appear in an alert when there is no terminal.
+
 ```
 mac-reader README.md               # rendered Markdown; the corner icon shows the source
 cat notes.md | mac-reader -        # standard input
@@ -81,12 +107,35 @@ On Linux the package is just `ReaderCore` and its tests, so `make test` and
 
 ```
 make debug      # swift build
-make build      # swift build -c release  -> .build/release/mac-reader
-make install    # copy the release binary to ~/bin (override with PREFIX=...)
+make build      # swift build -c release
+make app        # build/Mac Reader.app: universal (arm64 + x86_64), hardened runtime, signed
+make install    # make app, then install it (see Install)
+make icon       # recompile the app icon (needs Xcode 26 or later)
 make test       # swift test (Swift Testing; Command Line Tools are enough)
 make fmt        # swift format, config in .swift-format
 make lint       # swift format lint
 ```
+
+`make app` signs ad hoc, which is all a Mac that built the app needs. To
+distribute it, sign with a Developer ID (`make app SIGN_IDENTITY="Developer ID
+Application: …"`, which also timestamps the signature) and notarize the result.
+`VERSION` sets the app's version (default 0.1.0); the build number is the commit
+count.
+
+## App icon
+
+`App/AppIcon.icon` is an Icon Composer icon: macOS 26 and later draw its layers
+with Liquid Glass and their own dark, tinted and clear looks. `make icon`
+compiles it with `actool` into `App/Assets.car`, which also holds flat bitmaps
+for macOS 14 and 15, and `App/AppIcon.icns`. Both are committed, so `make app`
+works without Xcode.
+
+The layers (`App/AppIcon.icon/Assets/*.svg`) are drawn with the vector-art
+studio from `App/icon-art/scene.ts`; `App/icon-art/brief.md` describes the design.
+To change them, copy that folder to vector-art's `artworks/mac-reader-icon/`,
+render each layer with `LAYER=backdrop|heading|body pnpm art:render
+mac-reader-icon`, copy each `output/mac-reader-icon/illustration.svg` over the
+layer of that name, then run `make icon`.
 
 Run without installing:
 
@@ -104,7 +153,8 @@ swift run mac-reader path/to/file.txt
 - `RenderedView.swift` – rendered Markdown in a transparent web view
 - `MarkdownView.swift` – holds the rendered and source views and the toggle icon
 - `ReaderWindow.swift` – borderless full-screen window with a blurred backdrop
-- `AppDelegate.swift` – window setup, menu, key dispatch
+- `AppDelegate.swift` – window setup, documents opened from Finder, menu, key dispatch
+- `App/` – the app bundle's `Info.plist`, the icon source and the compiled icon
 - `Sources/ReaderCore/Options.swift` – CLI flags, the text source and the plain / Markdown mode
 - `Sources/ReaderCore/MarkdownSpan.swift` – AppKit-free Markdown span extraction (swift-markdown)
 - `Sources/ReaderCore/MarkdownHTML.swift` – GitHub Flavored Markdown to HTML (cmark-gfm)

@@ -23,18 +23,23 @@ do {
     exit(64)  // EX_USAGE
 }
 
-let text: String
-do {
-    text = try TextLoader.load(options.source)
-} catch {
-    warn("\(error)")
-    exit(66)  // EX_NOINPUT
+// A file or standard input loads now, so its errors reach the terminal before the app
+// starts. The clipboard waits for launch to finish: when Finder or `open` starts the app
+// with a document, the document arrives during launch and is shown instead.
+var text: String?
+if options.source != .clipboard {
+    do {
+        text = try TextLoader.load(options.source)
+    } catch {
+        warn("\(error)")
+        exit(66)  // EX_NOINPUT
+    }
 }
 
 let app = NSApplication.shared
 // Regular policy so the app can become active and own key focus when
 // launched from a terminal; the Dock icon is hidden by presentation options.
 app.setActivationPolicy(.regular)
-let delegate = AppDelegate(text: text, options: options)
+let delegate = AppDelegate(options: options, text: text)
 app.delegate = delegate
 app.run()
