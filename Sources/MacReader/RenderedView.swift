@@ -18,8 +18,10 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
         let configuration = WKWebViewConfiguration()
         // The page needs no scripts of its own; the app's evaluateJavaScript calls still run.
         configuration.defaultWebpagePreferences.allowsContentJavaScript = false
-        // A reader has nothing to rewrite, so no Writing Tools button on selected text.
+        // A reader has nothing to rewrite, so no Writing Tools or Summarize in the context
+        // menu. It does not stop the button on selected text; disableSelectionUpdates does.
         if #available(macOS 15.0, *) { configuration.writingToolsBehavior = .none }
+        Self.disableSelectionUpdates(configuration.preferences)
         configuration.setURLSchemeHandler(LocalFiles(), forURLScheme: LocalFiles.scheme)
         super.init(frame: frame, configuration: configuration)
         // Let the blurred backdrop show through.
@@ -81,6 +83,27 @@ final class RenderedView: WKWebView, ReadingPane, WKNavigationDelegate {
         var components = URLComponents(url: url, resolvingAgainstBaseURL: true)
         components?.fragment = nil
         return components?.url
+    }
+
+    // MARK: Selection
+
+    /// AppKit puts the Writing Tools button on any selection a web view reports to it, whatever
+    /// `writingToolsBehavior` says (it only asks text views). The reports exist for text input,
+    /// which a read-only page takes none of, so turn them off with WebKit's internal
+    /// TextInputClientSelectionUpdatesEnabled feature where it exists. Selecting and copying
+    /// are unaffected.
+    private static func disableSelectionUpdates(_ preferences: WKPreferences) {
+        let setEnabled = NSSelectorFromString("_setEnabled:forFeature:")
+        let features = NSSelectorFromString("_features")
+        guard preferences.responds(to: setEnabled), WKPreferences.responds(to: features),
+            let all = WKPreferences.perform(features)?.takeUnretainedValue() as? [NSObject],
+            let feature = all.first(where: {
+                $0.value(forKey: "key") as? String == "TextInputClientSelectionUpdatesEnabled"
+            })
+        else { return }
+        typealias SetEnabled = @convention(c) (AnyObject, Selector, Bool, AnyObject) -> Void
+        let set = unsafeBitCast(preferences.method(for: setEnabled), to: SetEnabled.self)
+        set(preferences, setEnabled, false, feature)
     }
 
     // MARK: Page
