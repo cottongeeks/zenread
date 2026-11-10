@@ -32,8 +32,6 @@
 	<string>public.app-category.productivity</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
-	<key>NSSupportsAutomaticGraphicsSwitching</key>
-	<true/>
 	<!-- Open With for text and Markdown, without taking over as their default app -->
 	<key>CFBundleDocumentTypes</key>
 	<array>

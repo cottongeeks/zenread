@@ -10,7 +10,7 @@ terminal as `mac-reader`.
 
 ## Install
 
-Needs macOS 14 or later and the Swift 6 toolchain (the Xcode Command Line Tools
+Needs an Apple silicon Mac with macOS 14 or later, and the Swift 6 toolchain (the Xcode Command Line Tools
 are enough).
 
 ```
@@ -108,7 +108,7 @@ On Linux the package is just `ReaderCore` and its tests, so `make test` and
 ```
 make debug      # swift build
 make build      # swift build -c release
-make app        # build/Mac Reader.app: universal (arm64 + x86_64), hardened runtime, signed
+make app        # build/Mac Reader.app: Apple silicon, hardened runtime, signed
 make install    # make app, then install it (see Install)
 make icon       # recompile the app icon (needs Xcode 26 or later)
 make test       # swift test (Swift Testing; Command Line Tools are enough)

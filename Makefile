@@ -5,9 +5,6 @@ VERSION ?= 0.1.0
 BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
 # A Developer ID identity signs for distribution; "-" signs ad hoc, which is enough for this Mac.
 SIGN_IDENTITY ?= -
-# Built one architecture at a time and joined with lipo, which needs no more than the
-# Command Line Tools.
-ARCHS ?= arm64 x86_64
 
 APP_NAME = Mac Reader
 APP = build/$(APP_NAME).app
@@ -20,19 +17,13 @@ build:
 debug:
 	swift build
 
-# A universal, signed build/Mac Reader.app. Each architecture builds into the same products
-# folder, so its binary is copied out before the next one builds.
+# A signed build/Mac Reader.app for Apple silicon.
 app:
+	swift build -c release --arch arm64
 	rm -rf "$(APP)"
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
-	for arch in $(ARCHS); do \
-		swift build -c release --arch $$arch && \
-		cp "$$(swift build -c release --arch $$arch --show-bin-path)/mac-reader" \
-			"build/mac-reader-$$arch" || exit 1; \
-	done
-	lipo -create $(foreach arch,$(ARCHS),build/mac-reader-$(arch)) \
-		-output "$(APP)/Contents/MacOS/mac-reader"
-	rm -f $(foreach arch,$(ARCHS),build/mac-reader-$(arch))
+	cp "$$(swift build -c release --arch arm64 --show-bin-path)/mac-reader" \
+		"$(APP)/Contents/MacOS/mac-reader"
 	cp App/Info.plist "$(APP)/Contents/Info.plist"
 	plutil -replace CFBundleShortVersionString -string "$(VERSION)" "$(APP)/Contents/Info.plist"
 	plutil -replace CFBundleVersion -string "$(BUILD_NUMBER)" "$(APP)/Contents/Info.plist"
