@@ -1,4 +1,4 @@
-# Build and install mac-reader: the Mac Reader app, with its binary also on PATH as a CLI.
+# Build and install zenread: the Zenread app, with its binary also on PATH as a CLI.
 PREFIX ?= $(HOME)/bin
 APPDIR ?= /Applications
 VERSION ?= 0.1.0
@@ -6,7 +6,7 @@ BUILD_NUMBER ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 1)
 # A Developer ID identity signs for distribution; "-" signs ad hoc, which is enough for this Mac.
 SIGN_IDENTITY ?= -
 
-APP_NAME = Mac Reader
+APP_NAME = Zenread
 APP = build/$(APP_NAME).app
 
 .PHONY: build debug app install uninstall icon test fmt lint clean
@@ -17,13 +17,13 @@ build:
 debug:
 	swift build
 
-# A signed build/Mac Reader.app for Apple silicon.
+# A signed build/Zenread.app for Apple silicon.
 app:
 	swift build -c release --arch arm64
 	rm -rf "$(APP)"
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
-	cp "$$(swift build -c release --arch arm64 --show-bin-path)/mac-reader" \
-		"$(APP)/Contents/MacOS/mac-reader"
+	cp "$$(swift build -c release --arch arm64 --show-bin-path)/zenread" \
+		"$(APP)/Contents/MacOS/zenread"
 	cp App/Info.plist "$(APP)/Contents/Info.plist"
 	plutil -replace CFBundleShortVersionString -string "$(VERSION)" "$(APP)/Contents/Info.plist"
 	plutil -replace CFBundleVersion -string "$(BUILD_NUMBER)" "$(APP)/Contents/Info.plist"
@@ -33,7 +33,7 @@ app:
 		--sign "$(SIGN_IDENTITY)" "$(APP)"
 	codesign --verify --strict "$(APP)"
 
-# The app goes in APPDIR, and PREFIX gets a mac-reader command for the terminal. That is a
+# The app goes in APPDIR, and PREFIX gets a zenread command for the terminal. That is a
 # script that execs the app's binary rather than a symlink to it: macOS only treats the
 # process as the app (its name, icon and bundle ID) when the binary runs from its real path.
 # The old file is removed first, so writing the script never follows a symlink into the app.
@@ -41,14 +41,14 @@ install: app
 	mkdir -p "$(APPDIR)" "$(PREFIX)"
 	rm -rf "$(APPDIR)/$(APP_NAME).app"
 	ditto "$(APP)" "$(APPDIR)/$(APP_NAME).app"
-	rm -f "$(PREFIX)/mac-reader"
-	printf '#!/bin/sh\nexec "%s" "$$@"\n' "$(APPDIR)/$(APP_NAME).app/Contents/MacOS/mac-reader" \
-		> "$(PREFIX)/mac-reader"
-	chmod 755 "$(PREFIX)/mac-reader"
+	rm -f "$(PREFIX)/zenread"
+	printf '#!/bin/sh\nexec "%s" "$$@"\n' "$(APPDIR)/$(APP_NAME).app/Contents/MacOS/zenread" \
+		> "$(PREFIX)/zenread"
+	chmod 755 "$(PREFIX)/zenread"
 
 uninstall:
 	rm -rf "$(APPDIR)/$(APP_NAME).app"
-	rm -f "$(PREFIX)/mac-reader"
+	rm -f "$(PREFIX)/zenread"
 
 # Recompiles App/Assets.car and App/AppIcon.icns from App/AppIcon.icon. Needs Xcode 26 or
 # later; the results are committed so `make app` does not. actool resolves relative paths

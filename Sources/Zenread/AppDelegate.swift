@@ -74,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // (`.activateIgnoringOtherApps` has no effect since macOS 14, so it is not passed.)
         NSApp.activate(ignoringOtherApps: true)
         NSRunningApplication.current.activate()
-        if ProcessInfo.processInfo.environment["MAC_READER_DEBUG"] != nil {
+        if ProcessInfo.processInfo.environment["ZENREAD_DEBUG"] != nil {
             warn("screen \(screen.frame) window \(window.frame) space \(spaceMode)")
         }
     }
@@ -182,7 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
         self.font = zoomed
         pane.setFont(zoomed)
-        if ProcessInfo.processInfo.environment["MAC_READER_DEBUG"] != nil {
+        if ProcessInfo.processInfo.environment["ZENREAD_DEBUG"] != nil {
             warn("zoom \(size)pt, range \(sizes)")
         }
     }

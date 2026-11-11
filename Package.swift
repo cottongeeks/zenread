@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "mac-reader",
+    name: "zenread",
     platforms: [.macOS(.v14)],
     products: [],
     dependencies: [
@@ -28,6 +28,6 @@ let package = Package(
 // ReaderCore and its tests.
 #if os(macOS)
     // The command-line launcher and the app are one binary.
-    package.products.append(.executable(name: "mac-reader", targets: ["MacReader"]))
-    package.targets.append(.executableTarget(name: "MacReader", dependencies: ["ReaderCore"]))
+    package.products.append(.executable(name: "zenread", targets: ["Zenread"]))
+    package.targets.append(.executableTarget(name: "Zenread", dependencies: ["ReaderCore"]))
 #endif

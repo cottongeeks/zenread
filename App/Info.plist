@@ -5,13 +5,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mac Reader</string>
+	<string>Zenread</string>
 	<key>CFBundleName</key>
-	<string>Mac Reader</string>
+	<string>Zenread</string>
 	<key>CFBundleExecutable</key>
-	<string>mac-reader</string>
+	<string>zenread</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.cottongeeks.mac-reader</string>
+	<string>com.cottongeeks.zenread</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

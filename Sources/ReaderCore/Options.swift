@@ -46,7 +46,7 @@ public struct Options: Equatable, Sendable {
     }
 
     public static let usage = """
-        usage: mac-reader [options] [FILE]
+        usage: zenread [options] [FILE]
 
           FILE            text file to display, or '-' to read standard input;
                           without FILE the text on the clipboard is shown

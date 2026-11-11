@@ -1,9 +1,9 @@
 import AppKit
 import ReaderCore
 
-/// Writes "mac-reader: message" to stderr.
+/// Writes "zenread: message" to stderr.
 func warn(_ message: String) {
-    FileHandle.standardError.write(Data("mac-reader: \(message)\n".utf8))
+    FileHandle.standardError.write(Data("zenread: \(message)\n".utf8))
 }
 
 // Entry point. Parse arguments and load the text before touching AppKit so

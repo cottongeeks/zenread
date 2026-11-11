@@ -1,12 +1,12 @@
-# mac-reader
+# zenread
 
 A minimal macOS reading view for plain text and Markdown files. Launch it from
 the terminal with a file, or with no file to read the clipboard, and it fills the screen with a single, centred reading
 column set in the system serif (New York) over a blur of whatever is behind it.
 No chrome apart from a thin overlay scroller on the right.
 
-It installs as Mac Reader in Applications, and the same app runs from the
-terminal as `mac-reader`.
+It installs as Zenread in Applications, and the same app runs from the
+terminal as `zenread`.
 
 ## Install
 
@@ -14,30 +14,30 @@ Needs an Apple silicon Mac with macOS 14 or later, and the Swift 6 toolchain (th
 are enough).
 
 ```
-make install    # build/Mac Reader.app -> /Applications, and a mac-reader command in ~/bin
+make install    # build/Zenread.app -> /Applications, and a zenread command in ~/bin
 ```
 
 `APPDIR=~/Applications` and `PREFIX=/usr/local/bin` change where they go;
 `make uninstall` removes both. `~/bin` must be on your `PATH`.
 
-The `mac-reader` command is a two-line script that runs the binary inside the
+The `zenread` command is a two-line script that runs the binary inside the
 app, so the terminal and Finder share one installation. It is not a symlink:
-macOS only treats the process as Mac Reader, with its name and icon, when the
+macOS only treats the process as Zenread, with its name and icon, when the
 binary runs from its place in the bundle.
 
-From Finder, the Dock or Spotlight, Mac Reader shows the clipboard. It also
+From Finder, the Dock or Spotlight, Zenread shows the clipboard. It also
 appears under Open With for text and Markdown files, without becoming their
 default app, and opening a file while it is running replaces what it shows.
 Errors that would go to the terminal (an empty clipboard, an unreadable file)
 appear in an alert when there is no terminal.
 
 ```
-mac-reader README.md               # rendered Markdown; the corner icon shows the source
-cat notes.md | mac-reader -        # standard input
-mac-reader                         # no FILE: show the text on the clipboard
-mac-reader -- -notes.txt           # a file whose name starts with '-'
-mac-reader --plain notes.txt       # plain text, hard-wrapped lines reflowed
-mac-reader --font Charter book.md
+zenread README.md               # rendered Markdown; the corner icon shows the source
+cat notes.md | zenread -        # standard input
+zenread                         # no FILE: show the text on the clipboard
+zenread -- -notes.txt           # a file whose name starts with '-'
+zenread --plain notes.txt       # plain text, hard-wrapped lines reflowed
+zenread --font Charter book.md
 ```
 
 | Flag | Default | Meaning |
@@ -108,7 +108,7 @@ On Linux the package is just `ReaderCore` and its tests, so `make test` and
 ```
 make debug      # swift build
 make build      # swift build -c release
-make app        # build/Mac Reader.app: Apple silicon, hardened runtime, signed
+make app        # build/Zenread.app: Apple silicon, hardened runtime, signed
 make install    # make app, then install it (see Install)
 make icon       # recompile the app icon (needs Xcode 26 or later)
 make test       # swift test (Swift Testing; Command Line Tools are enough)
@@ -140,12 +140,12 @@ layer of that name, then run `make icon`.
 Run without installing:
 
 ```
-swift run mac-reader path/to/file.txt
+swift run zenread path/to/file.txt
 ```
 
 ## Layout
 
-- `Sources/MacReader/main.swift` – app bootstrap and error reporting
+- `Sources/Zenread/main.swift` – app bootstrap and error reporting
 - `TextLoader.swift` – file / stdin / clipboard loading with encoding detection
 - `Reflow.swift` – hard-wrap detection and paragraph reflow
 - `Typography.swift` – font selection, measure, zoom bounds, leading, paragraph spacing, Markdown theme

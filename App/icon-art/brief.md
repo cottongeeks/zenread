@@ -1,4 +1,4 @@
-# Mac Reader app icon
+# Zenread app icon
 
 A vector-art artwork: it renders in vector-art as `artworks/mac-reader-icon/`
 (see the README's App icon section).
