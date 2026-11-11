@@ -1,7 +1,7 @@
 # Zenread app icon
 
 A vector-art artwork: it renders in vector-art as `artworks/mac-reader-icon/`
-(see the README's App icon section).
+(see the App icon section of AGENTS.md).
 
 ## Subject
 
