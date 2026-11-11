@@ -42,18 +42,13 @@ Without a terminal, open Zenread from Spotlight, the Dock or a launcher hotkey
 to read your clipboard, or right-click a file in Finder and choose
 **Open With → Zenread**.
 
-Markdown appears as GitHub renders it. The small `</>` icon in the top-right
-corner switches to the source text, with its syntax highlighted.
-
 ## Keys
 
 | Key | Action |
 | --- | --- |
 | `Esc` | Close |
 | `Space` / `Shift-Space` | Page down / up |
-| `↓` `↑` or `j` `k` | Scroll a line |
+| `j` `k` | Scroll a line |
 | `g` / `G` | Top / bottom |
 | `⌘+` / `⌘-` | Bigger / smaller text |
-| `⌘C`, `⌘A` | Copy, select all |
 
-`PgDn`/`PgUp`, `f`/`b`, `d`/`u`, `Home`/`End` and `⌘↑`/`⌘↓` work too.

@@ -83,23 +83,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func show(_ text: String, source: Source) {
         guard let window, let font else { return }
         let frame = NSRect(origin: .zero, size: window.frame.size)
-        let sourceView = ReaderView(frame: frame, text: text, mode: options.mode, font: font)
-        let pane: ReadingPane
-        switch options.mode {
-        case .plain: pane = sourceView
-        case .markdown:
-            // Relative links and images resolve against the file's directory; for stdin and
-            // the clipboard, against the working directory.
-            var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            if case .file(let path) = source {
-                directory = URL(fileURLWithPath: path).deletingLastPathComponent()
-            }
-            pane = MarkdownView(
-                frame: frame,
-                rendered: RenderedView(
-                    frame: frame, markdown: text, font: font, directory: directory),
-                source: sourceView)
+        // Relative links and images resolve against the file's directory; for stdin and the
+        // clipboard, against the working directory.
+        var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        if case .file(let path) = source {
+            directory = URL(fileURLWithPath: path).deletingLastPathComponent()
         }
+        let pane = MarkdownView(
+            frame: frame, text: text, mode: options.mode, font: font, directory: directory)
         window.readerView = pane
         window.title = source.displayName
         window.makeFirstResponder(pane.focusView)

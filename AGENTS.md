@@ -76,6 +76,14 @@ Markdown:
   monospace on a faint tint, links, quotes, lists, emphasis and strikethrough
   in their own colours, and delimiters dimmed.
 
+Switching (`MarkdownView.swift`): every document gets the same pane, which
+builds its rendered, source and plain views the first time each is shown, so
+each keeps its own scroll position. `--plain` only picks the starting view. In
+Markdown the corner icon toggles rendered and source, and a ¶ to its left,
+transparent until the pointer comes within about 160 by 110 points of the
+corner, switches to plain text. Plain text shows one icon in the corner that
+switches to rendered Markdown. The choice is not remembered between launches.
+
 Typography (`Typography.swift`): the font defaults to New York and falls back
 to Charter, then Georgia. Text opens at 20 points and zooms in 2 point steps,
 from 12 points up to the largest size whose column still fits the screen width.
@@ -112,7 +120,7 @@ design. To change them:
 - `Sources/Zenread/Typography.swift`: font selection, measure, zoom bounds, leading, paragraph spacing and the Markdown theme
 - `Sources/Zenread/ReaderView.swift`: the source text view, scroll commands and the `ReadingPane` protocol
 - `Sources/Zenread/RenderedView.swift`: rendered Markdown in a transparent web view
-- `Sources/Zenread/MarkdownView.swift`: holds the rendered and source views and the toggle icon
+- `Sources/Zenread/MarkdownView.swift`: holds the rendered, source and plain views and the corner icons that switch them
 - `Sources/Zenread/ReaderWindow.swift`: borderless full-screen window with a blurred backdrop
 - `Sources/Zenread/AppDelegate.swift`: window setup, documents opened from Finder, the menu and key dispatch
 - `Sources/ReaderCore/Options.swift`: CLI flags, the text source and the plain or Markdown mode
